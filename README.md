@@ -24,11 +24,7 @@
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
+The Unofficial Guide answers plain questions about student life from the `campus_life` corpus: 88 short posts, written the way students answer each other, about dining halls, dorms, courses and the admin rules nobody explains (housing lottery, add/drop, dining dollars, printing). You ask something like "How late can I declare a course pass/fail?" and it finds the closest chunks of those posts, checks that they are close enough to be worth answering from, and writes a short answer that names the file it came from. If nothing is close enough, it says "I don't have enough information about that" instead of guessing. It does not know anything the posts don't say, so it can't tell you the bookstore's hours or whether the campus has a gym.
 
 ## Chunking Strategy
 
@@ -166,9 +162,9 @@ I ran the five test questions from [questions.py](questions.py) and the five `OU
 
      Milestone 5. -->
 
-**1.**
+**1. The chunker.** I described the problem to Claude (housing posts pack the good, the bad, laundry and noise into one chunk) and asked for a chunker that splits on sentences and packs them to about 200 characters. It ran, but when I printed the chunks "The bad: ..." had landed in the same chunk as the laundry line, which is exactly what my criterion 4 is meant to catch. I asked for boundaries that follow the posts' own structure instead: a new chunk at each paragraph break and at each "The good:" / "On noise:" style label. That version then cut the walking-times post into one chunk per route, because "Fenwick Court to central campus: 18 minutes" also looks like a label. I changed the label rule to lowercase words only, so proper nouns don't count, and had a lone "I'm a junior and I've done this twice now." wait for the next chunk instead of standing as a stub. I checked each version by printing the chunks for five posts and reading them, and kept the overlap at 0 on purpose.
 
-**2.**
+**2. My questions and criteria.** I wrote my first five test questions before reading the corpus (bookstore hours, coffee shop, late-assignment policy). I asked Claude to check them against retrieval, and it found the corpus has nothing on three of those topics, so their `expects` phrases could never match. I kept the two topics that had support (walking time, study rooms), replaced the rest with questions I could point to a sentence for, and rewrote `expects` from those sentences. For `criteria.md` I got stuck on criteria 4 and 5, so after checking with my team that AI help was allowed I asked Claude for drafts. What came back had counts in its reasons that were wrong (six housing halls, ten courses; there are seven and nine), so I checked them against the corpus folder and fixed them. I also replaced the hint text I had pasted in by mistake with real reasons. Claude wrote the first drafts of criteria 4 and 5 and their reasons; I reviewed the numbers and wording before committing.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
