@@ -27,8 +27,16 @@ CORPUS = os.getenv("AI201_CORPUS", "campus_life")
 # These are deliberately plain, generic numbers. Milestone 3 is where you
 # replace them with numbers that fit the documents you actually read.
 
-CHUNK_SIZE = 800        # characters per chunk
-CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks
+CHUNK_SIZE = 800        # characters per chunk — used only by chunker.fallback_split
+CHUNK_OVERLAP = 120     # characters shared between neighbouring chunks — same
+
+# Settings for chunker.split_documents, the strategy that replaces the fallback.
+# Why these numbers is written up in README.md under "Chunking Strategy".
+WHOLE_POST_LIMIT = 350  # a post this short or shorter stays one chunk
+MAX_CHUNK_CHARS = 300   # backstop: a chunk is cut at a sentence past this length
+MIN_CHUNK_CHARS = 40    # a chunk shorter than this is joined to the next one
+PREAMBLE_CHARS = 100    # same, for the first chunk of a post ("I'm a junior and...")
+SPLIT_OVERLAP = 0       # chunks are cut at topic boundaries, so nothing is repeated
 
 
 # ─── Retrieval (Milestone 4) ─────────────────────────────────────────────────

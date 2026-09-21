@@ -22,6 +22,7 @@ to it, write down what you saw, and move on. That's a real observation about
 your pipeline, not giving up.
 """
 
+import re
 from dataclasses import dataclass
 
 import config
@@ -80,24 +81,80 @@ def fallback_split(
     return chunks
 
 
+# A sentence that opens a new topic. Two patterns cover how these posts are
+# written: a short all-lowercase label and a colon ("The good:", "On noise:",
+# "Assessment:", "Wait times:"), and the dining posts' "The thing worth going
+# for is..." / "The thing to know is...". Proper nouns are left out of the label
+# on purpose, or "Fenwick Court to central campus: 18 minutes" would count as one.
+_TOPIC_LABEL = re.compile(
+    r"^(?:[A-Z][a-z]*(?: [a-z]+){0,4}:\s|The thing (?:worth going for|to know) is\b)"
+)
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9$])")
+
+
+def _split_title(text: str) -> tuple[str, str]:
+    """A post's first line is its title if it is short and not a sentence."""
+    first, _, rest = text.partition("\n")
+    if len(first) < 80 and not re.search(r"[.!?]$", first) and rest.strip():
+        return first.strip(), rest.strip()
+    return "", text
+
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Split documents into chunks, one topic per chunk.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
-
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
-
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    Chunking strategy for campus_life (details in README.md):
+      - A post of WHOLE_POST_LIMIT characters or fewer stays whole: it is
+        already one thought, and cutting it would only lose context.
+      - A longer post is cut into sentences and a new chunk starts where a new
+        topic starts: at a paragraph break, or at a sentence that opens with a
+        label such as "The bad:" or "On noise:".
+      - A chunk that runs past MAX_CHUNK_CHARS is cut at a sentence end, and one
+        shorter than MIN_CHUNK_CHARS is joined to the next so no chunk is a stub.
+      - The post's title is put back at the top of every chunk, so a chunk that
+        says "Laundry costs $1.75" still says which building it is about.
     """
-    return fallback_split(documents)
+    chunks: list[Chunk] = []
+
+    for doc in documents:
+        if len(doc.text) <= config.WHOLE_POST_LIMIT:
+            pieces = [doc.text]
+        else:
+            title, body = _split_title(doc.text)
+            pieces = []
+            current = ""
+            for paragraph in re.split(r"\n\s*\n", body):
+                sentences = [
+                    s.strip()
+                    for s in _SENTENCE_END.split(paragraph.replace("\n", " "))
+                    if s.strip()
+                ]
+                for i, sentence in enumerate(sentences):
+                    starts_topic = i == 0 or _TOPIC_LABEL.match(sentence)
+                    too_long = len(current) + 1 + len(sentence) > config.MAX_CHUNK_CHARS
+                    # A short opening line ("I'm a junior and I've done this
+                    # twice now.") is preamble, so it waits for the first topic.
+                    floor = config.PREAMBLE_CHARS if not pieces else config.MIN_CHUNK_CHARS
+                    if current and (starts_topic or too_long) and len(current) >= floor:
+                        pieces.append(current)
+                        current = ""
+                    current = f"{current} {sentence}".strip()
+            if current:
+                pieces.append(current)
+            pieces = [f"{title}\n\n{p}".strip() for p in pieces]
+
+        for index, piece in enumerate(pieces):
+            chunks.append(
+                Chunk(
+                    text=piece,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:

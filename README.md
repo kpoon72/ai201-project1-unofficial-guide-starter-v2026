@@ -32,18 +32,26 @@
 
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size:** posts of 350 characters or fewer stay whole; longer posts are cut into chunks of about 60–345 characters (average 189), never over 300 characters of body text. The cut points are topic boundaries, not a character count.
+**Overlap:** 0. Every chunk instead repeats its post's title on the first line.
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
+I read the `campus_life` posts in Milestone 1. Almost every one is a title plus one to three short paragraphs, and the useful fact sits in a single sentence ("Laundry costs $1.75 wash, $1.50 dry, card only."). The starter's fixed 800-character window therefore cut nothing: 88 documents became 88 chunks (317 characters on average). That is fine for a short post like `admin_dining_dollars.txt`, which is one thought. It is bad for the longer housing, course and dining posts (about 370–550 characters), which pack four or five separate topics into one chunk: layout, the good, the bad, laundry, noise. A question about laundry then only matches a fifth of the text.
 
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
+So `split_documents` in [chunker.py](chunker.py) does three things:
 
-     Milestone 3. -->
+1. **Short posts stay whole** (350 characters or fewer, `WHOLE_POST_LIMIT`). One post is already one thought, and cutting it would only remove context.
+2. **Longer posts are cut where the topic changes.** A new chunk starts at a paragraph break, at a sentence that opens with a short lowercase label and a colon ("The good:", "On noise:", "Assessment:"), or at the dining posts' "The thing worth going for is..." and "The thing to know is...". A chunk over 300 characters is cut at a sentence end instead (`MAX_CHUNK_CHARS`), and one under 40 is joined to the next (`MIN_CHUNK_CHARS`).
+3. **The title goes back on top of every chunk**, so "Laundry costs $1.75" still says which building it is about.
+
+**Why overlap is 0:** overlap exists so a sentence isn't cut in half, but I cut only between sentences. Adjacent sentences in these posts are usually separate facts (laundry, then noise), so repeating the end of one chunk at the start of the next would drag a neighbouring topic in. The repeated title supplies the context overlap would have.
+
+**I changed my mind twice.**
+- My first version just packed sentences up to 200 characters. It looked reasonable but mixed topics: "The bad: ..." ended up in the same chunk as the laundry line. That is exactly what criterion 4 is meant to catch, so I made the boundaries follow the posts' own structure instead of a length.
+- My second version treated any "words: text" as a label. That cut `transit_walking.txt` into one chunk per route, because "Fenwick Court to central campus: 18 minutes" matched. I now allow only lowercase words in a label, so proper nouns don't count.
+
+**Known weak spot:** this is tuned to the way these posts are written. It relies on labels like "The good:" and would do little on posts without them. And a few chunks are short but complete: "Expect 8 to 10 hours a week outside class." is 66 characters with its title.
+
+**Result:** 88 documents became 158 chunks (was 88), shortest 63, longest 345, average 189 characters (was 317). Producing function: `chunker.py::split_documents` (the original is kept as `chunker.py::fallback_split`).
 
 ## Sample Chunks
 
@@ -56,30 +64,57 @@
 
      Milestone 3. -->
 
-**Chunk 1** — source: `` — produced by: ``
+**Chunk 1** — source: `admin_add_drop_deadline.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+On the add/drop deadline
+
+You can add a course through the end of the second week. Dropping is a longer window — through the end of week six — but a drop after week two shows as a W on your transcript. Nothing anywhere on the registrar's site says this plainly, and students find out from each other.
 ```
 
-**Chunk 2** — source: `` — produced by: ``
+A whole short post, left uncut (under 350 characters). One thought, stands alone.
+
+**Chunk 2** — source: `course_cs_340.txt#2` — produced by: `chunker.py::split_documents`
 
 ```
+CS 340 Databases
+
+Expect 6 hours a week early, 15 in the last three weeks when the project lands.
 ```
 
-**Chunk 3** — source: `` — produced by: ``
+Cut from `course_cs_340.txt` at a paragraph break. The title on top makes it stand alone as a workload answer.
+
+**Chunk 3** — source: `course_phys_130_workload.txt#0` — produced by: `chunker.py::split_documents`
 
 ```
+Workload for PHYS 130 Mechanics
+
+People keep asking so: 7 hours a week, plus 3 on lab weeks. That's real time, not optimistic time.
+
+It's front-loaded — the first month is heavier than the rest, partly because you're learning the format.
 ```
 
-**Chunk 4** — source: `` — produced by: ``
+A whole short post (under 350 characters), from a separate workload file.
+
+**Chunk 4** — source: `dining_verrill_street_grill.txt#2` — produced by: `chunker.py::split_documents`
 
 ```
+Verrill Street Grill
+
+The thing to know is that one register, so the queue is a single line no matter how busy.
 ```
 
-**Chunk 5** — source: `` — produced by: ``
+Weakest of the five: the source sentence itself is clipped ("...is that one register"), and it is short. It is still one topic and names the place, but it is the kind of chunk I'd expect to answer a question badly.
+
+**Chunk 5** — source: `housing_innisfree_hall.txt#4` — produced by: `chunker.py::split_documents`
 
 ```
+Innisfree Hall — what it's actually like
+
+On noise: moderate; the building is L-shaped and the short wing is much quieter.
 ```
+
+Cut from `housing_innisfree_hall.txt` at the "On noise:" label. One topic, and the title says which building.
 
 ## Sample Answer
 
