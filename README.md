@@ -1,6 +1,9 @@
 # The Unofficial Guide
 
-<!-- Replace this line with your name and which corpus you picked. -->
+**Corpus:** `campus_life` — 88 short posts about student life (dining, housing, courses, admin rules).
+
+<!-- Add your name on this line. -->
+
 
 > **This file is your submission.** Fill it in as you go — most sections get
 > written during the milestone that produces them, not at the end.
