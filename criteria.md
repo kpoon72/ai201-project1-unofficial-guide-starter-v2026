@@ -25,6 +25,7 @@ contains the answer.
 **Why this target:**
 <!-- e.g. "One of my questions is about a topic only two documents mention, so
      I expect that one to be hard." -->
+Most of my questions have their answer in one short post, but the Kestrel Commons lunch-wait question has competition: there are two Kestrel posts and twelve more posts about the other six dining halls, most of which give wait times in almost the same words. I allow one miss because that one could plausibly slip, but not two, because with only 88 short chunks and five results per question, missing on most of them would mean retrieval itself is broken.
 
 ---
 
@@ -35,6 +36,7 @@ Every answer the system produces names at least one source document.
 **Why this target:**
 <!-- Why all five and not four? What about your setup makes that achievable —
      or what would have to go wrong for it not to be? -->
+This is all five, not four, because naming a source doesn't depend on retrieval luck: the grounding instruction already tells the model to name the file, and the starter prints a "Source:" line. If even one answer skips it, the prompt or the answer format is broken, not the data. (A refusal from the gate is not an answer, so it doesn't count against this.)
 
 ---
 
@@ -52,6 +54,7 @@ in at least 4 of 5 tries.
 **Why this target:**
 <!-- What did your distances look like when you set the cutoff in Milestone 4?
      Was there a clean gap, or did the two groups overlap? -->
+I wrote this before measuring any distances, so the reason is a guess to check in Milestone 4. The five out-of-scope questions (Mongolia, diesel engines, the World Cup, ibuprofen, Rust) are about as far from student life as I can get, so I expect most to be far from every chunk. I allow one miss because the ibuprofen question could land near `health_center.txt`, and a miss on that would be a real overlap in the data rather than a broken gate.
 
 ---
 
@@ -69,11 +72,10 @@ in at least 4 of 5 tries.
        - "No chunk is shorter than 200 characters, since anything below that
           in my corpus turned out to be a heading with no content under it." -->
 
-
+At least 4 of 5 chunks I read with `python app.py chunks -n 5` cover a single subject (for example laundry cost, or noise, but not both) and could answer a question without the rest of their post.
 
 **Why this target:**
-
-
+The starter kept each post whole, which is fine for short ones like `admin_dining_dollars.txt` but puts four topics in one chunk for the longer housing posts (Innisfree Hall and Old Brewhouse each cover layout, laundry cost, noise and heating together), so a laundry question only matches a quarter of that text. I picked 4 of 5, not 5 of 5, because a sample of five is small and one chunk that sits between two related facts shouldn't fail the whole strategy; I picked a plain count of five over a length limit because the shortest posts (about 180 characters) are already complete and a minimum length would wrongly count them as bad.
 
 ---
 
@@ -87,11 +89,10 @@ in at least 4 of 5 tries.
      present — anything, as long as it names a number or an observable
      outcome. -->
 
-
+For at least 4 of my 5 test questions, the source file named in the answer is a file that actually contains that question's `expects` phrase.
 
 **Why this target:**
-
-
+Criterion 2 only checks that a source is named, but this corpus has many near-duplicate posts (seven dining halls, seven housing halls, nine courses), so an answer can name a real file that is the wrong one. Naming the right file is what makes the answer checkable by a student, so I care about it more than the other criteria. I set it at 4 of 5 rather than 5 of 5 because the Kestrel Commons wait time also appears in `dining_kestrel_commons_followup.txt`, so a question can legitimately cite more than one file, and I don't want to fail a correct answer on that technicality.
 
 ---
 
