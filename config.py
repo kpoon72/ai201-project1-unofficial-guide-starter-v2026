@@ -51,7 +51,10 @@ TOP_K = 5               # how many chunks to pull back per question
 # 0.6 is a reasonable starting point, not a right answer. Milestone 4 has you
 # measure your own two groups of distances and put the cutoff in the gap.
 # Most corpora land somewhere between 0.45 and 0.75.
-THRESHOLD = 0.6
+THRESHOLD = 0.7
+# Set in Milestone 4 from measured distances: questions the corpus covers had a
+# best distance of 0.18–0.35, five clearly off-topic ones 0.82–0.86. 0.7 sits
+# in that gap, above the 0.60 that casually worded real questions reach.
 
 
 # ─── Models ──────────────────────────────────────────────────────────────────

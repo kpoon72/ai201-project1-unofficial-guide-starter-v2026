@@ -121,27 +121,39 @@ Cut from `housing_innisfree_hall.txt` at the "On noise:" label. One topic, and t
 <!-- One complete question and answer, pasted as text, with the source line
      visible. Milestone 4. -->
 
-**Question:**
+**Question:** How long is the wait at Kestrel Commons around lunchtime?
 
 **Answer:**
 
 ```
+  (best distance 0.180, cutoff 0.7)
+
+Based on the documents, the wait time at Kestrel Commons is 20 to 25 minutes between 12:15 and 1:00, and under 5 minutes before 11:45.
+Source: dining_kestrel_commons.txt (and dining_kestrel_commons_followup.txt)
+
+Sources retrieved: dining_kestrel_commons.txt, dining_kestrel_commons_followup.txt, dining_the_ridgeway_cafe_followup.txt
 ```
 
-**My relevance cutoff:**
+**My relevance cutoff:** 0.7 (`THRESHOLD` in [config.py](config.py)), up from the starter's 0.6.
 
-<!-- The number you set in config.py, and how you got there.
-
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
+I ran the five test questions from [questions.py](questions.py) and the five `OUT_OF_SCOPE` ones through retrieval and wrote down the best distance for each, using the new chunks. The two groups do not overlap and the gap is wide: everything the corpus covers is at 0.35 or below, and everything it doesn't is at 0.81 or above, so any cutoff between them passes all ten.
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| How long does it take to walk from the library to the Ridgeway Café? | yes | 0.352 |
+| How long is the wait at Kestrel Commons around lunchtime? | yes | 0.180 |
+| How late in the semester can I declare a course pass/fail? | yes | 0.206 |
+| Do my leftover dining dollars carry over from spring to the next autumn? | yes | 0.248 |
+| How do I book a group study room? | yes | 0.279 |
+| What is the capital of Mongolia? | no | 0.815 |
+| How do I change the oil in a diesel engine? | no | 0.853 |
+| Who won the 1994 World Cup? | no | 0.845 |
+| What is the recommended dosage of ibuprofen for a headache? | no | 0.849 |
+| How do I write a for loop in Rust? | no | 0.864 |
+
+**Why 0.7 and not the midpoint of that gap (about 0.58).** Ten easy questions don't show where the risky zone is, so I also tried questions in between. Casually worded real questions got as far as 0.60 ("where can i study quietly" 0.599, "can i take a class pass fail" 0.435). Campus-sounding questions the corpus doesn't answer got 0.40 to 0.63 (campus bookstore hours 0.402, coffee shop 0.475, late-assignment policy 0.501, gym 0.515, parking ticket 0.629). Those two groups overlap, so no cutoff can separate them, and the gate can only stop clear misses. I chose 0.7 so a real question phrased loosely isn't refused (at 0.6 it sits on the edge), while staying well below the 0.81 where clearly off-topic questions start. The cost of 0.7 is that the near-misses reach the model, so the grounding instruction has to catch them.
+
+**Grounding check.** I sent those five near-miss questions through the full pipeline at 0.7. The original instruction refused all of them with no invented facts, but the refusal wording varied and the coffee-shop reply added a tangential fact from the Ridgeway Café post. I tightened `GROUNDING_INSTRUCTION` in [generate.py](generate.py): refuse with the exact phrase "I don't have enough information about that", don't add related facts when refusing, and say which part is missing if only part is covered. Re-run, the gym and coffee-shop questions both returned that exact refusal. The off-topic Mongolia question is stopped by the gate and never reaches the model (0 model calls).
 
 ## How I Used AI
 
